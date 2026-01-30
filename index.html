@@ -129,6 +129,10 @@
           <li>Say “What’s lunch today?” or ask for a specific date.</li>
         </ul>
 
+        <h2>Status</h2>
+        <p id="status-text">Checking the latest menu status…</p>
+        <p class="note" id="status-detail"></p>
+
         <h2>Data Source</h2>
         <div class="url-box">
           <span id="json-url">https://joseph-m-valdez.github.io/sgm-lunch/data/YYYY-MM.json</span>
@@ -149,6 +153,56 @@
         const text = document.getElementById('json-url').textContent;
         navigator.clipboard.writeText(text).catch(() => {});
       }
+
+      function monthLabel(monthKey) {
+        const parts = monthKey.split('-');
+        if (parts.length !== 2) return monthKey;
+        const year = parts[0];
+        const monthIndex = Number(parts[1]) - 1;
+        const names = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const name = names[monthIndex] || parts[1];
+        return `${name} ${year}`;
+      }
+
+      function setStatus(text, detail) {
+        document.getElementById('status-text').textContent = text;
+        document.getElementById('status-detail').textContent = detail || '';
+      }
+
+      fetch('data/status.json', { cache: 'no-store' })
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (!data) {
+            setStatus('Menu status is unavailable.', 'Try again later.');
+            return;
+          }
+
+          const currentLabel = monthLabel(data.current_month || '');
+          const menuLabel = monthLabel(data.menu_month_detected || data.current_month || '');
+
+          if (data.state === 'waiting_for_new_menu') {
+            setStatus(`${menuLabel} menu is the latest posted.`, `Waiting for the ${currentLabel} menu to be released.`);
+            return;
+          }
+
+          if (data.state === 'up_to_date' || data.state === 'updated') {
+            setStatus(`${currentLabel} menu is available.`, data.last_updated ? `Last updated: ${data.last_updated}` : '');
+            return;
+          }
+
+          if (data.state === 'error') {
+            setStatus('Menu status is unavailable.', 'Please check back later.');
+            return;
+          }
+
+          setStatus('Menu status is unavailable.', 'Try again later.');
+        })
+        .catch(() => {
+          setStatus('Menu status is unavailable.', 'Try again later.');
+        });
     </script>
   </body>
 </html>

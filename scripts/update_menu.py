@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -316,6 +316,19 @@ def write_menu_json(menu_map: dict, month_key: str) -> Path:
     return json_path
 
 
+def write_status(state: str, current_month_key: str, menu_month_key: str | None) -> None:
+    status_path = DATA_DIR / "status.json"
+    payload = {
+        "current_month": current_month_key,
+        "state": state,
+        "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    if menu_month_key:
+        payload["menu_month_detected"] = menu_month_key
+    with open(status_path, "w") as f:
+        json.dump(payload, f, indent=2)
+
+
 def check_if_update_needed(month_key: str) -> bool:
     json_path = DATA_DIR / f"{month_key}.json"
     if json_path.exists():
@@ -329,26 +342,31 @@ def main():
     print("=" * 50)
     print("SGM Lunch Menu Updater")
     print("=" * 50)
-    
+
+    meta = None
+    current_month_key = datetime.now().strftime("%Y-%m")
+
     try:
         meta = get_menu_meta_from_env()
         if not meta:
             meta = fetch_menu_meta_with_playwright()
-        
+
         print(f"Detected: {meta['month_name']} {meta['year']} ({meta['month_key']})")
-        current_month_key = datetime.now().strftime("%Y-%m")
         if meta["month_key"] != current_month_key:
             print(f"Menu image still for {meta['month_key']}; waiting for {current_month_key}.")
+            write_status("waiting_for_new_menu", current_month_key, meta["month_key"])
             return 0
 
         if not check_if_update_needed(meta["month_key"]):
             print("No update needed. Exiting.")
+            write_status("up_to_date", current_month_key, meta["month_key"])
             return 0
-        
+
         image_path = download_image(meta["image_url"], meta["month_key"])
         menu_map = parse_image_with_gemini(image_path, meta["month_name"], meta["year"])
         menu_map = validate_menu_map(menu_map, meta["month_key"])
         write_menu_json(menu_map, meta["month_key"])
+        write_status("updated", current_month_key, meta["month_key"])
         
         print("=" * 50)
         print("Update complete!")
@@ -358,6 +376,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         traceback.print_exc()
+        write_status("error", current_month_key, meta["month_key"] if meta else None)
         return 1
 
 
