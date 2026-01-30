@@ -172,6 +172,20 @@
         document.getElementById('status-detail').textContent = detail || '';
       }
 
+      function formatTimestamp(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZoneName: 'short'
+        });
+      }
+
       fetch('data/status.json', { cache: 'no-store' })
         .then((res) => res.ok ? res.json() : null)
         .then((data) => {
@@ -189,7 +203,8 @@
           }
 
           if (data.state === 'up_to_date' || data.state === 'updated') {
-            setStatus(`${currentLabel} menu is available.`, data.last_updated ? `Last updated: ${data.last_updated}` : '');
+            const updated = formatTimestamp(data.last_updated);
+            setStatus(`${currentLabel} menu is available.`, updated ? `Last updated: ${updated}` : '');
             return;
           }
 
