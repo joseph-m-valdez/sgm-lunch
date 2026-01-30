@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SGM Lunch Shortcut</title>
+    <style>
+      :root {
+        --bg: #f5f1ea;
+        --card: #fffaf2;
+        --ink: #23201c;
+        --muted: #6a6258;
+        --accent: #2f5d50;
+        --accent-ink: #ffffff;
+        --border: #ded4c6;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Georgia", "Times New Roman", serif;
+        color: var(--ink);
+        background: radial-gradient(1200px 500px at 20% -10%, #efe7db, transparent),
+          var(--bg);
+      }
+      main {
+        max-width: 780px;
+        margin: 40px auto;
+        padding: 0 20px 40px;
+      }
+      header {
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: 36px;
+        margin: 0 0 8px;
+        letter-spacing: 0.3px;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 0 0 12px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      }
+      .cta {
+        display: inline-block;
+        background: var(--accent);
+        color: var(--accent-ink);
+        padding: 12px 18px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 600;
+        margin: 8px 0 16px;
+      }
+      ul {
+        margin: 0 0 16px;
+        padding-left: 18px;
+      }
+      li {
+        margin-bottom: 8px;
+        color: var(--muted);
+      }
+      .url-box {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        background: #f7f3ed;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        color: #3b352f;
+      }
+      .copy-btn {
+        border: 0;
+        background: #e7ddd0;
+        color: #3b352f;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 14px;
+      }
+      .note {
+        font-size: 13px;
+        color: #7a7166;
+      }
+      @media (max-width: 600px) {
+        h1 {
+          font-size: 30px;
+        }
+        main {
+          margin: 24px auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>SGM Lunch Shortcut</h1>
+        <p>Get daily lunch info from SGM using an Apple Shortcut.</p>
+      </header>
+
+      <section class="card">
+        <a class="cta" href="https://www.icloud.com/shortcuts/08c4c488d12b40e8abb1b030acd9b22c">Get the Shortcut</a>
+        <p class="note">iPhone only (Apple Shortcuts).</p>
+
+        <h2>Install Steps</h2>
+        <ul>
+          <li>Open the link above on your iPhone.</li>
+          <li>Tap “Get Shortcut” and allow any permissions it asks for.</li>
+          <li>Say “What’s lunch today?” or ask for a specific date.</li>
+        </ul>
+
+        <h2>Data Source</h2>
+        <div class="url-box">
+          <span id="json-url">https://joseph-m-valdez.github.io/sgm-lunch/data/YYYY-MM.json</span>
+          <button class="copy-btn" type="button" onclick="copyUrl()">Copy</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      function copyUrl() {
+        const text = document.getElementById('json-url').textContent;
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+    </script>
+  </body>
+</html>

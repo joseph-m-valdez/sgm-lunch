@@ -2,6 +2,9 @@
 
 Automated school lunch menu scraper that publishes JSON files to GitHub Pages for easy Siri Shortcut integration.
 
+Landing page with install instructions:
+https://joseph-m-valdez.github.io/sgm-lunch/
+
 ## Setup
 
 ### 1. Get a Gemini API Key (Free)
