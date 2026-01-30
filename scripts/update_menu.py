@@ -316,24 +316,11 @@ def write_menu_json(menu_map: dict, month_key: str) -> Path:
     return json_path
 
 
-def check_if_update_needed(displayed_month_key: str) -> bool:
-    """Check if we need to update the menu."""
-    current_month_key = datetime.now().strftime("%Y-%m")
-    json_path = DATA_DIR / f"{displayed_month_key}.json"
-    
+def check_if_update_needed(month_key: str) -> bool:
+    json_path = DATA_DIR / f"{month_key}.json"
     if json_path.exists():
-        print(f"Menu for {displayed_month_key} already exists: {json_path}")
+        print(f"Menu for {month_key} already exists: {json_path}")
         return False
-    
-    if displayed_month_key != current_month_key:
-        day_of_month = datetime.now().day
-        if day_of_month <= 7:
-            print(f"Calendar still showing {displayed_month_key}, current is {current_month_key}")
-            print("Calendar may not be updated yet. Will retry later.")
-            return False
-        else:
-            print(f"Warning: Calendar showing {displayed_month_key} but we're in {current_month_key}")
-    
     return True
 
 
@@ -349,7 +336,11 @@ def main():
             meta = fetch_menu_meta_with_playwright()
         
         print(f"Detected: {meta['month_name']} {meta['year']} ({meta['month_key']})")
-        
+        current_month_key = datetime.now().strftime("%Y-%m")
+        if meta["month_key"] != current_month_key:
+            print(f"Menu image still for {meta['month_key']}; waiting for {current_month_key}.")
+            return 0
+
         if not check_if_update_needed(meta["month_key"]):
             print("No update needed. Exiting.")
             return 0

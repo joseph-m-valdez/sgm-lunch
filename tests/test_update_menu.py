@@ -6,8 +6,8 @@ from scripts.update_menu import extract_menu_meta_from_images, validate_menu_map
 def test_extract_menu_meta_from_images_uses_date_in_url():
     now = datetime(2026, 1, 15)
     image_urls = [
-        "https://example.com/pictures/2021/7/combo_logo.png",
-        "https://example.com/pictures/2026/1/menu.jpg",
+        "https://files.ecatholic.com/pictures/2021/7/combo_logo.png",
+        "https://files.ecatholic.com/pictures/2026/1/menu.jpg",
     ]
 
     meta = extract_menu_meta_from_images(image_urls, now)
@@ -21,8 +21,8 @@ def test_extract_menu_meta_from_images_uses_date_in_url():
 def test_extract_menu_meta_from_images_falls_back_to_current_month():
     now = datetime(2026, 5, 10)
     image_urls = [
-        "https://example.com/pictures/misc/menu.jpg",
-        "https://example.com/pictures/2021/7/logo.jpg",
+        "https://files.ecatholic.com/pictures/misc/menu.jpg",
+        "https://files.ecatholic.com/pictures/2021/7/logo.jpg",
     ]
 
     meta = extract_menu_meta_from_images(image_urls, now)
