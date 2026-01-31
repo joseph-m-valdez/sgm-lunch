@@ -206,17 +206,63 @@ def download_image(image_url: str, month_key: str) -> Path:
     return image_path
 
 
+def get_gemini_client() -> GeminiClient:
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable not set")
+    return GeminiClient(api_key=api_key)
+
+
+def parse_month_from_image(image_path: Path) -> tuple[int, int]:
+    client = get_gemini_client()
+    image_data = image_path.read_bytes()
+
+    suffix = image_path.suffix.lower()
+    mime_type = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+    }.get(suffix, "image/jpeg")
+
+    prompt = (
+        "This is a school lunch calendar image. "
+        "Extract ONLY the month and year shown. "
+        "Return a JSON object like {\"year\": 2026, \"month\": 2}."
+    )
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            prompt,
+            genai_types.Part.from_bytes(data=image_data, mime_type=mime_type),
+        ],
+    )
+
+    response_text = response.text.strip()
+    try:
+        payload = json.loads(response_text)
+    except json.JSONDecodeError:
+        json_match = re.search(r"\{[\s\S]*\}", response_text)
+        if not json_match:
+            raise ValueError("Could not parse month from image")
+        payload = json.loads(json_match.group(0))
+
+    year = int(payload.get("year"))
+    month = int(payload.get("month"))
+    if year < 2000 or month < 1 or month > 12:
+        raise ValueError("Invalid month/year from image")
+
+    return year, month
+
+
 def parse_image_with_gemini(image_path: Path, month_name: str, year: int) -> dict:
     """
     Use Google Gemini Vision to parse the calendar image into structured data.
     
     Returns a dict mapping date strings (YYYY-MM-DD) to lunch descriptions.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable not set")
-    
-    client = GeminiClient(api_key=api_key)
+    client = get_gemini_client()
     image_data = image_path.read_bytes()
     suffix = image_path.suffix.lower()
     mime_type = {
@@ -394,23 +440,33 @@ def main():
             meta = fetch_menu_meta_with_playwright()
 
         print(f"Detected: {meta['month_name']} {meta['year']} ({meta['month_key']})")
-        if meta["month_key"] not in allowed_months:
-            print(f"Menu image still for {meta['month_key']}; waiting for {current_month_key} or {next_month_key}.")
-            write_status("waiting_for_new_menu", current_month_key, meta["month_key"])
-            cleanup_old_months(current_month_key)
-            return 0
-
-        if not check_if_update_needed(meta["month_key"]):
-            print("No update needed. Exiting.")
-            write_status("up_to_date", current_month_key, meta["month_key"])
-            cleanup_old_months(current_month_key)
-            return 0
-
         image_path = download_image(meta["image_url"], meta["month_key"])
-        menu_map = parse_image_with_gemini(image_path, meta["month_name"], meta["year"])
-        menu_map = validate_menu_map(menu_map, meta["month_key"])
-        write_menu_json(menu_map, meta["month_key"])
-        write_status("updated", current_month_key, meta["month_key"])
+        try:
+            detected_year, detected_month = parse_month_from_image(image_path)
+            detected_month_key = month_key_for(detected_year, detected_month)
+            detected_month_name = MONTH_NAMES[detected_month]
+        except Exception as e:
+            print(f"Warning: Could not detect month from image: {e}")
+            detected_month_key = meta["month_key"]
+            detected_month_name = meta["month_name"]
+            detected_year = meta["year"]
+
+        if detected_month_key not in allowed_months:
+            print(f"Menu image still for {detected_month_key}; waiting for {current_month_key} or {next_month_key}.")
+            write_status("waiting_for_new_menu", current_month_key, detected_month_key)
+            cleanup_old_months(current_month_key)
+            return 0
+
+        if not check_if_update_needed(detected_month_key):
+            print("No update needed. Exiting.")
+            write_status("up_to_date", current_month_key, detected_month_key)
+            cleanup_old_months(current_month_key)
+            return 0
+
+        menu_map = parse_image_with_gemini(image_path, detected_month_name, detected_year)
+        menu_map = validate_menu_map(menu_map, detected_month_key)
+        write_menu_json(menu_map, detected_month_key)
+        write_status("updated", current_month_key, detected_month_key)
         cleanup_old_months(current_month_key)
         
         print("=" * 50)
