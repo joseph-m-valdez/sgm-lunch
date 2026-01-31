@@ -6,13 +6,13 @@
     <title>SGM Lunch Shortcut</title>
     <style>
       :root {
-        --bg: #f5f1ea;
-        --card: #fffaf2;
-        --ink: #23201c;
-        --muted: #6a6258;
-        --accent: #2f5d50;
-        --accent-ink: #ffffff;
-        --border: #ded4c6;
+        --bg: #0f1311;
+        --card: #161c18;
+        --ink: #f4f1ea;
+        --muted: #b8b0a5;
+        --accent: #4fa784;
+        --accent-ink: #0d1a14;
+        --border: #28342e;
       }
       * {
         box-sizing: border-box;
@@ -21,7 +21,7 @@
         margin: 0;
         font-family: "Georgia", "Times New Roman", serif;
         color: var(--ink);
-        background: radial-gradient(1200px 500px at 20% -10%, #efe7db, transparent),
+        background: radial-gradient(1200px 500px at 20% -10%, #1d2420, transparent),
           var(--bg);
       }
       main {
@@ -47,7 +47,7 @@
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 20px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
       }
       .cta {
         display: inline-block;
@@ -72,18 +72,18 @@
         flex-wrap: wrap;
         gap: 10px;
         align-items: center;
-        background: #f7f3ed;
+        background: #1c231f;
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 10px 12px;
         font-family: "Courier New", monospace;
         font-size: 14px;
-        color: #3b352f;
+        color: #e3dbcf;
       }
       .copy-btn {
         border: 0;
-        background: #e7ddd0;
-        color: #3b352f;
+        background: #27352e;
+        color: #e3dbcf;
         padding: 8px 12px;
         border-radius: 10px;
         cursor: pointer;
@@ -92,7 +92,7 @@
       }
       .note {
         font-size: 13px;
-        color: #7a7166;
+        color: #9f968b;
       }
       @media (max-width: 600px) {
         h1 {
@@ -172,7 +172,7 @@
         document.getElementById('status-detail').textContent = detail || '';
       }
 
-      function formatTimestamp(value) {
+      function formatTimestamp(value, timeZone) {
         if (!value) return '';
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return value;
@@ -182,7 +182,8 @@
           day: 'numeric',
           hour: 'numeric',
           minute: '2-digit',
-          timeZoneName: 'short'
+          timeZoneName: 'short',
+          timeZone
         });
       }
 
@@ -203,8 +204,9 @@
           }
 
           if (data.state === 'up_to_date' || data.state === 'updated') {
-            const updated = formatTimestamp(data.last_updated);
-            setStatus(`${currentLabel} menu is available.`, updated ? `Last updated: ${updated}` : '');
+            const updated = formatTimestamp(data.last_updated, 'America/Los_Angeles');
+            const detail = updated ? `Last updated: ${updated} (Pacific Time)` : '';
+            setStatus(`${currentLabel} menu is available.`, detail);
             return;
           }
 
