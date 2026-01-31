@@ -187,6 +187,18 @@
         });
       }
 
+      function nextMonthKey(currentKey) {
+        const parts = currentKey.split('-');
+        if (parts.length !== 2) return '';
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        if (!year || !month) return '';
+        const total = year * 12 + (month - 1) + 1;
+        const nextYear = Math.floor(total / 12);
+        const nextMonth = (total % 12) + 1;
+        return `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+      }
+
       fetch('data/status.json', { cache: 'no-store' })
         .then((res) => res.ok ? res.json() : null)
         .then((data) => {
@@ -197,6 +209,11 @@
 
           const currentLabel = monthLabel(data.current_month || '');
           const menuLabel = monthLabel(data.menu_month_detected || data.current_month || '');
+          const available = Array.isArray(data.available_months) ? data.available_months : [];
+          const currentAvailable = data.current_month && available.includes(data.current_month);
+          const nextAvailable = data.current_month
+            ? available.includes(nextMonthKey(data.current_month))
+            : false;
 
           if (data.state === 'waiting_for_new_menu') {
             setStatus(`${menuLabel} menu is the latest posted.`, `Waiting for the ${currentLabel} menu to be released.`);
@@ -206,7 +223,15 @@
           if (data.state === 'up_to_date' || data.state === 'updated') {
             const updated = formatTimestamp(data.last_updated, 'America/Los_Angeles');
             const detail = updated ? `Last updated: ${updated} (Pacific Time)` : '';
-            setStatus(`${currentLabel} menu is available.`, detail);
+            if (currentAvailable && nextAvailable) {
+              setStatus(`${currentLabel} menu is available.`, `Next month is also available. ${detail}`.trim());
+            } else if (currentAvailable) {
+              setStatus(`${currentLabel} menu is available.`, detail);
+            } else if (available.length > 0) {
+              setStatus(`${menuLabel} menu is the latest posted.`, `Waiting for the ${currentLabel} menu to be released.`);
+            } else {
+              setStatus('Menu status is unavailable.', 'Try again later.');
+            }
             return;
           }
 

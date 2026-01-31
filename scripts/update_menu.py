@@ -325,8 +325,46 @@ def write_status(state: str, current_month_key: str, menu_month_key: str | None)
     }
     if menu_month_key:
         payload["menu_month_detected"] = menu_month_key
+    available = sorted(
+        [p.stem for p in DATA_DIR.glob("*.json") if re.match(r"\d{4}-\d{2}$", p.stem)]
+    )
+    payload["available_months"] = available
     with open(status_path, "w") as f:
         json.dump(payload, f, indent=2)
+
+
+def add_months(year: int, month: int, delta: int) -> tuple[int, int]:
+    total = year * 12 + (month - 1) + delta
+    new_year = total // 12
+    new_month = total % 12 + 1
+    return new_year, new_month
+
+
+def month_key_for(year: int, month: int) -> str:
+    return f"{year}-{month:02d}"
+
+
+def cleanup_old_months(current_month_key: str) -> None:
+    current_json = DATA_DIR / f"{current_month_key}.json"
+    if not current_json.exists():
+        return
+
+    day_of_month = datetime.now().day
+    if day_of_month <= 3:
+        return
+
+    year, month = map(int, current_month_key.split("-"))
+    prev_year, prev_month = add_months(year, month, -1)
+    prev_key = month_key_for(prev_year, prev_month)
+
+    prev_json = DATA_DIR / f"{prev_key}.json"
+    if prev_json.exists():
+        prev_json.unlink()
+
+    for ext in (".jpg", ".jpeg", ".png", ".gif"):
+        raw_path = RAW_DIR / f"{prev_key}{ext}"
+        if raw_path.exists():
+            raw_path.unlink()
 
 
 def check_if_update_needed(month_key: str) -> bool:
@@ -344,7 +382,11 @@ def main():
     print("=" * 50)
 
     meta = None
-    current_month_key = datetime.now().strftime("%Y-%m")
+    now = datetime.now()
+    current_month_key = now.strftime("%Y-%m")
+    next_year, next_month = add_months(now.year, now.month, 1)
+    next_month_key = month_key_for(next_year, next_month)
+    allowed_months = {current_month_key, next_month_key}
 
     try:
         meta = get_menu_meta_from_env()
@@ -352,14 +394,16 @@ def main():
             meta = fetch_menu_meta_with_playwright()
 
         print(f"Detected: {meta['month_name']} {meta['year']} ({meta['month_key']})")
-        if meta["month_key"] != current_month_key:
-            print(f"Menu image still for {meta['month_key']}; waiting for {current_month_key}.")
+        if meta["month_key"] not in allowed_months:
+            print(f"Menu image still for {meta['month_key']}; waiting for {current_month_key} or {next_month_key}.")
             write_status("waiting_for_new_menu", current_month_key, meta["month_key"])
+            cleanup_old_months(current_month_key)
             return 0
 
         if not check_if_update_needed(meta["month_key"]):
             print("No update needed. Exiting.")
             write_status("up_to_date", current_month_key, meta["month_key"])
+            cleanup_old_months(current_month_key)
             return 0
 
         image_path = download_image(meta["image_url"], meta["month_key"])
@@ -367,6 +411,7 @@ def main():
         menu_map = validate_menu_map(menu_map, meta["month_key"])
         write_menu_json(menu_map, meta["month_key"])
         write_status("updated", current_month_key, meta["month_key"])
+        cleanup_old_months(current_month_key)
         
         print("=" * 50)
         print("Update complete!")
