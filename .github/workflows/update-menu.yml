@@ -7,6 +7,9 @@ on:
     - cron: '0 20 1-7 * *'  # 8pm UTC, days 1-7 (12-hour retry)
     # Run once daily rest of month (just in case)
     - cron: '0 8 8-28 * *'  # 8am UTC, days 8-28
+    # Run once daily at end of month (for early next-month menus)
+    - cron: '0 8 29-31 * *' # 8am UTC, days 29-31
+    - cron: '0 20 29-31 * *' # 8pm UTC, days 29-31
   workflow_dispatch:  # Manual trigger
 
 permissions:
