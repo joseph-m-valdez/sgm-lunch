@@ -1,10 +1,9 @@
 {
   "current_month": "2026-04",
-  "state": "updated",
-  "last_updated": "2026-04-15T08:33:00Z",
+  "state": "up_to_date",
+  "last_updated": "2026-04-16T08:32:44Z",
   "menu_month_detected": "2026-04",
   "available_months": [
-    "2026-03",
     "2026-04"
   ]
 }
